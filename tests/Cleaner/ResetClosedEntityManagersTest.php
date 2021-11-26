@@ -2,10 +2,10 @@
 
 namespace LongRunning\DoctrineORM\Cleaner;
 
-use Doctrine\Persistence\ObjectManager;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\ObjectManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\Test\TestLogger;
@@ -15,11 +15,11 @@ final class ResetClosedEntityManagersTest extends TestCase
     /**
      * @test
      */
-    public function it_resets_entity_managers() : void
+    public function it_resets_entity_managers(): void
     {
         $managers = [
             'default' => $this->getEntityManager(),
-            'second'  => $this->getEntityManager(),
+            'second' => $this->getEntityManager(),
         ];
 
         $registry = $this->createMock(ManagerRegistry::class);
@@ -28,14 +28,12 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('getManagers')
             ->willReturn($managers);
 
-        foreach (array_keys($managers) as $count => $name) {
-            $registry
-                ->expects($this->at($count + 1))
-                ->method('resetManager')
-                ->with($name);
-        }
+        $registry
+            ->expects($this->exactly(count($managers)))
+            ->method('resetManager')
+            ->withConsecutive(...array_map(function ($manager) { return [$manager]; }, array_keys($managers)));
 
-        $logger  = new TestLogger();
+        $logger = new TestLogger();
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
 
@@ -52,11 +50,11 @@ final class ResetClosedEntityManagersTest extends TestCase
     /**
      * @test
      */
-    public function it_resets_entity_manager_interfase() : void
+    public function it_resets_entity_manager_interfase(): void
     {
         $managers = [
             'default' => $this->getEntityManagerInterface(),
-            'second'  => $this->getEntityManagerInterface(),
+            'second' => $this->getEntityManagerInterface(),
         ];
 
         $registry = $this->createMock(ManagerRegistry::class);
@@ -65,14 +63,12 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('getManagers')
             ->willReturn($managers);
 
-        foreach (array_keys($managers) as $count => $name) {
-            $registry
-                ->expects($this->at($count + 1))
-                ->method('resetManager')
-                ->with($name);
-        }
+        $registry
+            ->expects($this->exactly(count($managers)))
+            ->method('resetManager')
+            ->withConsecutive(...array_map(function ($manager) { return [$manager]; }, array_keys($managers)));
 
-        $logger  = new TestLogger();
+        $logger = new TestLogger();
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
 
@@ -89,7 +85,7 @@ final class ResetClosedEntityManagersTest extends TestCase
     /**
      * @tests
      */
-    public function it_ignores_other_object_mappers() : void
+    public function it_ignores_other_object_mappers(): void
     {
         $managers = [
             'default' => $this->getObjectManager(),
@@ -101,17 +97,15 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('getManagers')
             ->willReturn($managers);
 
-        $logger  = new TestLogger();
+        $logger = new TestLogger();
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
 
         $this->assertFalse($logger->hasDebugRecords());
     }
 
-    /***
-     * @return EntityManager|EntityManagerInterface|MockObject
-     */
-    private function getEntityManager() : MockObject
+    // @return EntityManager|EntityManagerInterface|MockObject
+    private function getEntityManager(): MockObject
     {
         $manager = $this->getMockBuilder(EntityManager::class)
             ->disableOriginalConstructor()
@@ -125,10 +119,8 @@ final class ResetClosedEntityManagersTest extends TestCase
         return $manager;
     }
 
-    /***
-     * @return EntityManagerInterface|MockObject
-     */
-    private function getEntityManagerInterface() : MockObject
+    // @return EntityManagerInterface|MockObject
+    private function getEntityManagerInterface(): MockObject
     {
         $manager = $this->getMockBuilder(EntityManagerInterface::class)
             ->disableOriginalConstructor()
@@ -145,7 +137,7 @@ final class ResetClosedEntityManagersTest extends TestCase
     /**
      * @return MockObject|ObjectManager
      */
-    private function getObjectManager() : MockObject
+    private function getObjectManager(): MockObject
     {
         $manager = $this->getMockBuilder(ObjectManager::class)
             ->disableOriginalConstructor()
