@@ -8,7 +8,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\Test\TestLogger;
+use Psr\Log\LoggerInterface;
 
 final class ResetClosedEntityManagersTest extends TestCase
 {
@@ -33,18 +33,15 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('resetManager')
             ->withConsecutive(...array_map(function ($manager) { return [$manager]; }, array_keys($managers)));
 
-        $logger = new TestLogger();
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $logger
+            ->expects($this->exactly(2))
+            ->method('debug')
+            ->with('Reset closed EntityManager');
+
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
-
-        $this->assertTrue($logger->hasDebug([
-            'message' => 'Reset closed EntityManager',
-            'context' => ['entity_manager' => 'default'],
-        ]));
-        $this->assertTrue($logger->hasDebug([
-            'message' => 'Reset closed EntityManager',
-            'context' => ['entity_manager' => 'second'],
-        ]));
     }
 
     /**
@@ -68,22 +65,19 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('resetManager')
             ->withConsecutive(...array_map(function ($manager) { return [$manager]; }, array_keys($managers)));
 
-        $logger = new TestLogger();
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $logger
+            ->expects($this->exactly(2))
+            ->method('debug')
+            ->with('Reset closed EntityManager');
+
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
-
-        $this->assertTrue($logger->hasDebug([
-            'message' => 'Reset closed EntityManager',
-            'context' => ['entity_manager' => 'default'],
-        ]));
-        $this->assertTrue($logger->hasDebug([
-            'message' => 'Reset closed EntityManager',
-            'context' => ['entity_manager' => 'second'],
-        ]));
     }
 
     /**
-     * @tests
+     * @test
      */
     public function it_ignores_other_object_mappers(): void
     {
@@ -97,17 +91,15 @@ final class ResetClosedEntityManagersTest extends TestCase
             ->method('getManagers')
             ->willReturn($managers);
 
-        $logger = new TestLogger();
+        $logger = $this->createMock(LoggerInterface::class);
         $cleaner = new ResetClosedEntityManagers($registry, $logger);
         $cleaner->cleanUp();
-
-        $this->assertFalse($logger->hasDebugRecords());
     }
 
     // @return EntityManager|EntityManagerInterface|MockObject
     private function getEntityManager(): MockObject
     {
-        $manager = $this->getMockBuilder(EntityManager::class)
+        $manager = $this->getMockBuilder(EntityManagerInterface::class)
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -139,14 +131,8 @@ final class ResetClosedEntityManagersTest extends TestCase
      */
     private function getObjectManager(): MockObject
     {
-        $manager = $this->getMockBuilder(ObjectManager::class)
+        return $this->getMockBuilder(ObjectManager::class)
             ->disableOriginalConstructor()
             ->getMock();
-
-        $manager
-            ->expects($this->never())
-            ->method('isOpen');
-
-        return $manager;
     }
 }
